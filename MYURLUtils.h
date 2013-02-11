@@ -1,6 +1,6 @@
 //
 //  MYURLUtils.h
-//  TouchDB
+//  MYUtilities
 //
 //  Created by Jens Alfke on 5/15/12.
 //  Copyright (c) 2012 Couchbase, Inc. All rights reserved.
@@ -25,6 +25,9 @@ static inline NSURL* $url(NSString* str) {
 
 /** The path and everything after it. This is what appears on the first line of an HTTP request. */
 @property (readonly) NSString* my_pathAndQuery;
+
+/** Removes the username and password components, if any, from a URL. */
+@property (readonly) NSURL* my_URLByRemovingUser;
 
 /** Returns an NSURLProtectionSpace initialized based on the attributes of this URL
     (host, effective port, scheme) and the given realm and authentication method. */

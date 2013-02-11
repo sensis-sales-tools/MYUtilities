@@ -1,6 +1,6 @@
 //
 //  MYURLUtils.m
-//  TouchDB
+//  MYUtilities
 //
 //  Created by Jens Alfke on 5/15/12.
 //  Copyright (c) 2012 Couchbase, Inc. All rights reserved.
@@ -35,6 +35,33 @@
 }
 
 
+- (NSURL*) my_URLByRemovingUser {
+    CFRange userRange, userPlusDelimRange, passPlusDelimRange;
+    userRange = CFURLGetByteRangeForComponent((CFURLRef)self, kCFURLComponentUser, &userPlusDelimRange);
+    CFURLGetByteRangeForComponent((CFURLRef)self, kCFURLComponentPassword, &passPlusDelimRange);
+    if (userRange.length == 0)
+        return self;
+    CFIndex delEnd;
+    if (passPlusDelimRange.length == 0)
+        delEnd = userPlusDelimRange.location + userPlusDelimRange.length;
+    else
+        delEnd = passPlusDelimRange.location+passPlusDelimRange.length;
+
+    UInt8 urlBytes[1024];
+    CFIndex nBytes = CFURLGetBytes((CFURLRef)self, urlBytes, sizeof(urlBytes) - 1);
+    if (nBytes < 0)
+        return self;
+    memmove(urlBytes + userRange.location,
+            urlBytes + delEnd,
+            nBytes - delEnd);
+    nBytes -= delEnd - userRange.location;
+    CFURLRef newURL = CFURLCreateWithBytes(NULL, urlBytes, nBytes,
+                                           kCFStringEncodingUTF8,  NULL);
+    Assert(newURL != nil);
+    return [(id)newURL autorelease];
+}
+
+
 - (NSURLProtectionSpace*) my_protectionSpaceWithRealm: (NSString*)realm
                                  authenticationMethod: (NSString*)authenticationMethod
 {
@@ -58,7 +85,7 @@
     NSString* password = self.password;
     if (username && password)
         return [NSURLCredential credentialWithUser: username password: password
-                                       persistence: NSURLCredentialPersistenceNone];
+                                       persistence: NSURLCredentialPersistenceForSession];
     
     NSURLProtectionSpace* space = [self my_protectionSpaceWithRealm: realm
                                                authenticationMethod: authenticationMethod];
@@ -71,3 +98,13 @@
 
 
 @end
+
+
+TestCase(MYURLUtils) {
+    NSURL* url = $url(@"https://example.com/path/here?query#fragment");
+    CAssertEqual(url.my_URLByRemovingUser, url);
+    url = $url(@"https://bob@example.com/path/here?query#fragment");
+    CAssertEqual(url.my_URLByRemovingUser, $url(@"https://example.com/path/here?query#fragment"));
+    url = $url(@"https://bob:foo@example.com/path/here?query#fragment");
+    CAssertEqual(url.my_URLByRemovingUser, $url(@"https://example.com/path/here?query#fragment"));
+}
