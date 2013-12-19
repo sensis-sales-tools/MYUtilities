@@ -94,7 +94,7 @@ NSValue* _box(const void *value, const char *encoding)
         case 'Q':   return [NSNumber numberWithUnsignedLongLong: *(unsigned long long*)value];
         case 'f':   return [NSNumber numberWithFloat: *(float*)value];
         case 'd':   return [NSNumber numberWithDouble: *(double*)value];
-        case '*':   return [NSString stringWithUTF8String: *(char**)value];
+        case '*':   return [NSValue valueWithPointer: *(char**)value]; 
         case '@':   return *(id*)value;
         default:    return [NSValue value: value withObjCType: encoding];
     }
